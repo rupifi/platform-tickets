@@ -11,4 +11,8 @@
 		ForceType image/svg+xml
 		Header set Content-Disposition attachment
 	</FilesMatch>
+
+        RewriteCond %{HTTPS} !=on
+        RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+        Header add Content-Security-Policy "upgrade-insecure-requests"
 </IfModule>
