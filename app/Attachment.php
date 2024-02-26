@@ -19,7 +19,7 @@ class Attachment extends Model
 
     const DIRECTORY = 'attachment';
 
-    CONST DISK = 'private';
+    CONST DISK = 's3';
 
     CONST MIME_TYPE_MAX_LENGTH = 127;
 
@@ -248,13 +248,13 @@ class Attachment extends Model
      */
     public function url()
     {
-        $file_url = Storage::url($this->getStorageFilePath());
+        $file_url = $this->getDisk()->temporaryUrl($this->getStorageFilePath(), now()->addMinutes(5));
 
         // Fix percents.
         // https://github.com/freescout-helpdesk/freescout/issues/3530
-        $file_url = str_replace('%', '%25', $file_url);
+        // $file_url = str_replace('%', '%25', $file_url);
 
-        return $file_url.'?id='.$this->id.'&token='.$this->getToken();
+        return $file_url;
     }
 
     /**
@@ -418,9 +418,8 @@ class Attachment extends Model
     public function duplicate($thread_id = null)
     {
         $new_attachment = $this->replicate();
-        if ($thread_id) {
-            $new_attachment->thread_id = $thread_id;
-        }
+        
+        $new_attachment->thread_id = $thread_id;
 
         $new_attachment->save();
 

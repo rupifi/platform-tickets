@@ -1393,6 +1393,12 @@ class Thread extends Model
     {
         $message = \MailHelper::fetchMessage($this->conversation->mailbox, $this->message_id, $this->getMailDate());
 
+        // Try without limiting by date.
+        // https://github.com/freescout-helpdesk/freescout/issues/3658
+        if (!$message) {
+            $message = \MailHelper::fetchMessage($this->conversation->mailbox, $this->message_id);
+        }
+
         if (!$message) {
             return '';
         }
@@ -1521,7 +1527,7 @@ class Thread extends Model
 
     public function canRetrySend()
     {
-        if (!in_array($this->send_status, [SendLog::STATUS_SEND_ERROR, SendLog::STATUS_DELIVERY_ERROR])) {
+        if ($this->isSendStatusSuccess()) {
             return false;
         }
         // Check if failed_job still exists.
@@ -1530,6 +1536,20 @@ class Thread extends Model
         }
 
         return true;
+    }
+
+    public function isSendStatusSuccess()
+    {
+        // We have not tried to send the email yet.
+        if ((int)$this->send_status == 0) {
+            return false;
+        }
+
+        if (!in_array($this->send_status, [SendLog::STATUS_SEND_ERROR, SendLog::STATUS_DELIVERY_ERROR, SendLog::STATUS_SEND_INTERMEDIATE_ERROR])) {
+            return true;
+        }
+        
+        return false;
     }
 
     public function getFailedJobId()
